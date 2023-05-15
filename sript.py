@@ -1,4 +1,5 @@
-
+import io
+import base64
 import pandas as pd
 import streamlit as st
 
@@ -40,7 +41,14 @@ def main():
                 df2['New Column'] = transformed_values
                 st.write(df2)
                 st.write("Сохранение в файл...")
-                df2.to_excel(uploaded_file2.name, index=False)
+                output = io.BytesIO()
+                writer = pd.ExcelWriter(output, engine='xlsxwriter')
+                df2.to_excel(writer, index=False)
+                writer.save()
+                processed_data = output.getvalue()
+                b64 = base64.b64encode(processed_data).decode()
+                href = f'<a href="data:file/xlsx;base64,{b64}" download="new_file.xlsx">Скачать новый файл</a>'
+                st.markdown(href, unsafe_allow_html=True)
                 st.success("Файл успешно сохранен.")
             else:
                 st.warning("Чтобы сохранить результат, нажмите соответствующую кнопку.")
