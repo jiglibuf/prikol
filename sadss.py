@@ -29,11 +29,13 @@ def main():
 
             # Выбор столбца для преобразования
             values_col = st.selectbox("Выберите столбец для преобразования", options=df2.columns)
+            # Ввод разделителя
+            delimiter = st.text_input("Введите разделитель значений в столбце для преобразования", "|")
 
             # Преобразование значений
             my_dict = dict(zip(df1[key_col], df1[value_col]))
-            split_values = df2[values_col].astype(str).str.split('|')
-            transformed_values = split_values.apply(lambda x: '|'.join(filter(lambda y: y != '', [my_dict.get(y, '') for y in x])))
+            split_values = df2[values_col].astype(str).str.split(delimiter)
+            transformed_values = split_values.apply(lambda x: delimiter.join(filter(lambda y: y != '', [my_dict.get(y, '') for y in x])))
 
             # Сохранение результата в новый файл
             st.header("Шаг 3: Сохранение результата")
@@ -47,8 +49,8 @@ def main():
                 writer.save()
                 processed_data = output.getvalue()
                 b64 = base64.b64encode(processed_data).decode()
-                href = f'data:file/xlsx;base64,{b64}'
-                st.download_button(label="Скачать новый файл", data=href, file_name="new_file.xlsx", mime="file/xlsx")
+                href = f'<a href="data:file/xlsx;base64,{b64}" download="new_file.xlsx">Скачать новый файл</a>'
+                st.markdown(href, unsafe_allow_html=True)
                 st.success("Файл успешно сохранен.")
             else:
                 st.warning("Чтобы сохранить результат, нажмите соответствующую кнопку.")
