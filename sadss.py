@@ -46,12 +46,14 @@ def main():
                 output = io.BytesIO()
                 writer = pd.ExcelWriter(output, engine='xlsxwriter')
                 df2.to_excel(writer, index=False)
-                writer.save()
+                writer.close()
                 processed_data = output.getvalue()
                 b64 = base64.b64encode(processed_data).decode()
-                href = f'<a href="data:file/xlsx;base64,{b64}" download="new_file.xlsx">Скачать новый файл</a>'
+                href = f'<a href="data:application/vnd.ms-excel;base64,{b64}" download="new_file.xlsx"></a>'
                 st.markdown(href, unsafe_allow_html=True)
+                st.download_button(label="Скачать файл", data=base64.b64decode(b64), file_name="new_file.xlsx", mime="application/vnd.ms-excel")
                 st.success("Файл успешно сохранен.")
+                
             else:
                 st.warning("Чтобы сохранить результат, нажмите соответствующую кнопку.")
     

@@ -28,11 +28,13 @@ def main():
 
             # Выбор столбца для преобразования
             values_col = st.selectbox("Выберите столбец для преобразования", options=df2.columns)
+            # Ввод разделителя
+            delimiter = st.text_input("Введите разделитель значений в столбце для преобразования", "|")
 
             # Преобразование значений
             my_dict = dict(zip(df1[key_col], df1[value_col]))
-            split_values = df2[values_col].astype(str).str.split('|')
-            transformed_values = split_values.apply(lambda x: '|'.join(filter(lambda y: y != '', [my_dict.get(y, '') for y in x])))
+            split_values = df2[values_col].astype(str).str.split(delimiter)
+            transformed_values = split_values.apply(lambda x: delimiter.join(filter(lambda y: y != '', [my_dict.get(y, '') for y in x])))
 
             # Сохранение результата в новый файл
             st.header("Шаг 3: Сохранение результата")
