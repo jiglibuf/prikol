@@ -1,52 +1,57 @@
+import io
+import base64
 import pandas as pd
-import tkinter as tk
-from tkinter import filedialog
+import streamlit as st
 
-# Открытие диалогового окна для выбора файлов
-root = tk.Tk()
-root.withdraw()
-
-from_file_path = filedialog.askopenfilename(title="Выберите файл Откуда")
-to_file_path = filedialog.askopenfilename(title="Выберите файл Куда")
-
-# Загрузка данных из файлов
-from_df = pd.read_excel(from_file_path)
-to_df = pd.read_excel(to_file_path)
-
-# Выбор столбцов для обработки
-from_col = input("Введите букву столбца с кадастровыми номерами в файле Откуда (например, Кадастровый номер): ")
-to_col = input("Введите букву столбца, в который нужно записать результат в файле Куда (например, NOTE): ")
-lookup_col = input("Введите букву столбца, в котором нужно искать значения в файле Куда (например, Название): ")
-result_col = input("Введите букву столбца, в который нужно записать результат (например, D): ")
-
-# Создание пустого словаря для хранения уникальных значений
-match_values_dict = {}
-print(to_df[lookup_col])
-print(to_df[to_col])
-
-# Цикл по каждой строке в столбце "Откуда"
-for index, row in from_df.iterrows():
-    # Получение значения из столбца "Откуда"
-    from_value = row.loc[from_col]
+ #для онлайн юза
+def main():
+    st.title("Преобразование данных из Excel файлов")
     
-    if pd.notna(from_value):
-        # Преобразование значения в строку и разделение на отдельные значения по символу "|"
-        split_values = str(from_value).split("|")
-        # Цикл по каждому отдельному значению из столбца "Откуда"
-        for value in split_values:
-            # Поиск строк в файле Куда, которые содержат искомое значение в столбце lookup_col
-            match_rows = to_df[to_df[lookup_col] == value]
-            if len(match_rows) == 0:
-                continue  # пропустить текущую итерацию, если строка не найдена
-            # Берем первую строку, содержащую искомое значение, из найденных строк в файле Куда
-            match = match_rows.iloc[0]
-            match_value = match[to_col]
-            if not pd.isna(match_value) and match_value not in match_values_dict:
-                match_values_dict[match_value] = True
-        # Записываем результат в столбец result_col
-        from_df.at[index, result_col] = ", ".join(match_values_dict.keys())
-        # Очищаем словарь для следующей итерации
-        match_values_dict.clear()
+    # Загрузка первого Excel файла
+    st.header("Шаг 1: Загрузка файла с ключами")
+    uploaded_file1 = st.file_uploader("Выберите первый файл в формате Excel", type="xlsx")
+    if uploaded_file1 is not None:
+        df1 = pd.read_excel(uploaded_file1)
+        st.success("Файл успешно загружен.")
+        st.write(df1.head())
 
-# Сохраняем изменения в файле Куда
-from_df.to_excel(to_file_path, index=False)
+        # Выбор столбцов для первого файла
+        key_col = st.selectbox("Выберите столбец с ключами", options=df1.columns)
+        value_col = st.selectbox("Выберите столбец со значениями", options=df1.columns)
+
+        # Загрузка второго Excel файла
+        st.header("Шаг 2: Загрузка файла, где надо преобразовать значения")
+        uploaded_file2 = st.file_uploader("Выберите второй файл в формате Excel", type="xlsx")
+        if uploaded_file2 is not None:
+            df2 = pd.read_excel(uploaded_file2)
+            st.success("Файл успешно загружен.")
+            st.write(df2.head())
+
+            # Выбор столбца для преобразования
+            values_col = st.selectbox("Выберите столбец для преобразования", options=df2.columns)
+
+            # Преобразование значений
+            my_dict = dict(zip(df1[key_col], df1[value_col]))
+            split_values = df2[values_col].astype(str).str.split('|')
+            transformed_values = split_values.apply(lambda x: '|'.join(filter(lambda y: y != '', [my_dict.get(y, '') for y in x])))
+
+            # Сохранение результата в новый файл
+            st.header("Шаг 3: Сохранение результата")
+            if st.button("Сохранить результат"):
+                df2['New Column'] = transformed_values
+                st.write(df2)
+                st.write("Сохранение в файл...")
+                output = io.BytesIO()
+                writer = pd.ExcelWriter(output, engine='xlsxwriter')
+                df2.to_excel(writer, index=False)
+                writer.save()
+                processed_data = output.getvalue()
+                b64 = base64.b64encode(processed_data).decode()
+                href = f'data:file/xlsx;base64,{b64}'
+                st.download_button(label="Скачать новый файл", data=href, file_name="new_file.xlsx", mime="file/xlsx")
+                st.success("Файл успешно сохранен.")
+            else:
+                st.warning("Чтобы сохранить результат, нажмите соответствующую кнопку.")
+    
+if __name__ == '__main__':
+    main()
