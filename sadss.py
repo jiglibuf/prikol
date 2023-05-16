@@ -30,7 +30,7 @@ def main():
             # Выбор столбца для преобразования
             values_col = st.selectbox("Выберите столбец для преобразования", options=df2.columns)
             # Ввод разделителя
-            delimiter = st.text_input("Введите разделитель значений в столбце для преобразования", "|")
+            delimiter = repr(st.text_input("Введите разделитель значений в столбце для преобразования", "|",key='delimiter_input'))
 
             # Преобразование значений
             my_dict = dict(zip(df1[key_col], df1[value_col]))
